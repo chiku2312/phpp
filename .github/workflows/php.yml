@@ -1,0 +1,43 @@
+name: Deploy PHP App to Elastic Beanstalk
+
+on:
+  push:
+    branches:
+      - main
+      - master# ya master, jo bhi tera main branch ho
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'   # version tu apne hisab se rakh sakta hai
+          extensions: mbstring, mysqli, intl, curl, json
+          ini-values: post_max_size=256M, upload_max_filesize=256M
+
+      - name: Install Dependencies (if composer.json exists)
+        run: |
+          if [ -f "composer.json" ]; then
+            composer install --no-dev --prefer-dist --optimize-autoloader
+          fi
+
+      - name: Create ZIP for deployment
+        run: |
+          zip -r phpp.zip . -x "*.git*"
+
+      - name: Deploy to Elastic Beanstalk
+        uses: einaregilsson/beanstalk-deploy@v22
+        with:
+          aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          application_name: "phpapp"             # ← apna Elastic Beanstalk app name likh
+          environment_name: "phpapp-env"         # ← apna environment name likh
+          region: "us-east-1"                    # ← jaise Mumbai region
+          version_label: ${{ github.run_id }}
+          deployment_package: phpp.zip
