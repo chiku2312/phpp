@@ -1,16 +1,12 @@
-# Dockerfile for PHP + Apache
+# PHP + Apache base image
 FROM php:8.2-apache
 
-# Optional: install extensions you need (uncomment and edit)
-# RUN docker-php-ext-install pdo pdo_mysql mysqli
-
-# Copy project into Apache webroot
+# Copy project files
 COPY . /var/www/html/
 
-# Ensure permissions (optional)
+# Give permissions
 RUN chown -R www-data:www-data /var/www/html
 
+# Expose port 80
 EXPOSE 80
-
-CMD ["apache2-foreground"]
 
