@@ -1,10 +1,10 @@
-name: Deploy PHP App to Elastic Beanstalk
+name: Build and Deploy Dockerized PHP App to Elastic Beanstalk
 
 on:
   push:
     branches:
       - main
-      - master # ya master, jo bhi tera main branch ho
+      - master
 
 jobs:
   deploy:
@@ -14,30 +14,33 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.2'   # version tu apne hisab se rakh sakta hai
-          extensions: mbstring, mysqli, intl, curl, json
-          ini-values: post_max_size=256M, upload_max_filesize=256M
-
-      - name: Install Dependencies (if composer.json exists)
+      - name: Login to AWS ECR
         run: |
-          if [ -f "composer.json" ]; then
-            composer install --no-dev --prefer-dist --optimize-autoloader
-          fi
+          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 215896857075.dkr.ecr.us-east-1.amazonaws.com
 
-      - name: Create ZIP for deployment
+      - name: Build Docker image
         run: |
-          zip -r phpp.zip . -x "*.git*"
+          docker build -t php-app .
+
+      - name: Tag image
+        run: |
+          docker tag php-app:latest 215896857075.dkr.ecr.us-east-1.amazonaws.com/php-app:latest
+
+      - name: Push image to ECR
+        run: |
+          docker push 215896857075.dkr.ecr.us-east-1.amazonaws.com/php-app:latest
+
+      - name: Create Dockerrun file zip
+        run: |
+          zip -r deploy.zip Dockerrun.aws.json
 
       - name: Deploy to Elastic Beanstalk
         uses: einaregilsson/beanstalk-deploy@v22
         with:
           aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          application_name: "phpapp"             # ← apna Elastic Beanstalk app name likh
-          environment_name: "phpapp-env"         # ← apna environment name likh
-          region: "us-east-1"                    # ← jaise Mumbai region
+          application_name: "phpapp"
+          environment_name: "phpapp-env"
+          region: "us-east-1"
           version_label: ${{ github.run_id }}
-          deployment_package: phpp.zip
+          deployment_package: deploy.zip
