@@ -1,10 +1,16 @@
-name: Build and Deploy Dockerized PHP App to Elastic Beanstalk
+name: Deploy Dockerized PHP App to Elastic Beanstalk
 
 on:
   push:
     branches:
       - main
       - master
+
+env:
+  AWS_REGION: "us-east-1"
+  ECR_REPOSITORY: "php-app"   # ← apna ECR repo name
+  EB_APP_NAME: "phpapp"       # ← apna Elastic Beanstalk application name
+  EB_ENV_NAME: "phpapp-env"   # ← apna environment name
 
 jobs:
   deploy:
@@ -14,33 +20,51 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Login to AWS ECR
-        run: |
-          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 215896857075.dkr.ecr.us-east-1.amazonaws.com
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build Docker image
         run: |
-          docker build -t php-app .
-
-      - name: Tag image
-        run: |
-          docker tag php-app:latest 215896857075.dkr.ecr.us-east-1.amazonaws.com/php-app:latest
+          docker build -t $ECR_REPOSITORY .
+          docker tag $ECR_REPOSITORY:latest ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
 
       - name: Push image to ECR
         run: |
-          docker push 215896857075.dkr.ecr.us-east-1.amazonaws.com/php-app:latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
 
-      - name: Create Dockerrun file zip
+      - name: Create Dockerrun.aws.json
         run: |
-          zip -r deploy.zip Dockerrun.aws.json
+          echo '{
+            "AWSEBDockerrunVersion": 1,
+            "Image": {
+              "Name": "${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest",
+              "Update": "true"
+            },
+            "Ports": [
+              {
+                "ContainerPort": "80"
+              }
+            ]
+          }' > Dockerrun.aws.json
+
+      - name: Zip Dockerrun file
+        run: zip -r deploy.zip Dockerrun.aws.json
 
       - name: Deploy to Elastic Beanstalk
         uses: einaregilsson/beanstalk-deploy@v22
         with:
           aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          application_name: "phpapp"
-          environment_name: "phpapp-env"
-          region: "us-east-1"
+          application_name: phpapp
+          environment_name: phpapp-env
+          region: us-east-1
           version_label: ${{ github.run_id }}
           deployment_package: deploy.zip
