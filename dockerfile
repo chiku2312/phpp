@@ -1,12 +1,15 @@
-# PHP + Apache base image
+# Step 1: Use PHP Apache image (instead of nginx base)
 FROM php:8.2-apache
 
-# Copy project files
+# Step 2: Copy code into Apache web root
 COPY . /var/www/html/
 
-# Give permissions
+# Step 3: Give permission
 RUN chown -R www-data:www-data /var/www/html
 
-# Expose port 80
+# Step 4: Expose port
 EXPOSE 80
+
+# Step 5: Start Apache
+CMD ["apache2-foreground"]
 
