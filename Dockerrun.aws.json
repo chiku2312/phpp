@@ -1,18 +1,12 @@
 {
-  "AWSEBDockerrunVersion": 2,
-  "containerDefinitions": [
+  "AWSEBDockerrunVersion": 1,
+  "Image": {
+    "Name": "215896857075.dkr.ecr.us-east-1.amazonaws.com/php-app:latest",
+    "Update": "true"
+  },
+  "Ports": [
     {
-      "name": "php-app",
-      "image": "215896857075.dkr.ecr.us-east-1.amazonaws.com/php-app:latest",
-      "essential": true,
-      "memory": 512,
-      "portMappings": [
-        {
-          "containerPort": 80,
-          "hostPort": 80
-        }
-      ]
+      "ContainerPort": "80"
     }
   ]
 }
-
