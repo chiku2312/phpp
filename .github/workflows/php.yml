@@ -3,14 +3,14 @@ name: Deploy Dockerized PHP App to Elastic Beanstalk
 on:
   push:
     branches:
-      - master
       - main
+      - master
 
 env:
   AWS_REGION: "us-east-1"
-  ECR_REPOSITORY: "php-app"        # ECR repo name
-  EB_APP_NAME: "php-app"           # Elastic Beanstalk Application Name
-  EB_ENV_NAME: "Php-app-env"       # Elastic Beanstalk Environment Name (case-sensitive)
+  ECR_REPOSITORY: "mnish"
+  EB_APP_NAME: "php-app"
+  EB_ENV_NAME: "php-app-env"
 
 jobs:
   deploy:
@@ -36,9 +36,8 @@ jobs:
           docker build -t $ECR_REPOSITORY .
           docker tag $ECR_REPOSITORY:latest ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
 
-      - name: Push Docker image to ECR
-        run: |
-          docker push ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
+      - name: Push image to ECR
+        run: docker push ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
 
       - name: Create Dockerrun.aws.json
         run: |
@@ -56,7 +55,7 @@ jobs:
             ]
           }' > Dockerrun.aws.json
 
-      - name: Zip Deployment Package
+      - name: Zip for deployment
         run: zip -r deploy.zip Dockerrun.aws.json
 
       - name: Deploy to Elastic Beanstalk
@@ -64,8 +63,8 @@ jobs:
         with:
           aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          application_name: ${{ env.EB_APP_NAME }}
-          environment_name: ${{ env.EB_ENV_NAME }}
-          region: ${{ env.AWS_REGION }}
+          application_name: php-app
+          environment_name: php-app-env
+          region: us-east-1
           version_label: ${{ github.run_id }}
           deployment_package: deploy.zip
