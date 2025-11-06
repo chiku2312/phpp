@@ -1,6 +1,9 @@
 .git
-.gitignore
+.github
 node_modules
 vendor
+.DS_Store
+docker-deploy.zip
+
 
 
