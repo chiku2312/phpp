@@ -3,14 +3,14 @@ name: Deploy Dockerized PHP App to Elastic Beanstalk
 on:
   push:
     branches:
-      - main
       - master
+      - main
 
 env:
   AWS_REGION: "us-east-1"
-  ECR_REPOSITORY: "php-app"   # ← apna ECR repo name
-  EB_APP_NAME: "phpapp"       # ← apna Elastic Beanstalk application name
-  EB_ENV_NAME: "phpapp-env"   # ← apna environment name
+  ECR_REPOSITORY: "php-app"        # ECR repo name
+  EB_APP_NAME: "php-app"           # Elastic Beanstalk Application Name
+  EB_ENV_NAME: "Php-app-env"       # Elastic Beanstalk Environment Name (case-sensitive)
 
 jobs:
   deploy:
@@ -25,7 +25,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Login to Amazon ECR
         id: login-ecr
@@ -36,7 +36,7 @@ jobs:
           docker build -t $ECR_REPOSITORY .
           docker tag $ECR_REPOSITORY:latest ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
 
-      - name: Push image to ECR
+      - name: Push Docker image to ECR
         run: |
           docker push ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
 
@@ -50,12 +50,13 @@ jobs:
             },
             "Ports": [
               {
-                "ContainerPort": "80"
+                "ContainerPort": 80,
+                "HostPort": 80
               }
             ]
           }' > Dockerrun.aws.json
 
-      - name: Zip Dockerrun file
+      - name: Zip Deployment Package
         run: zip -r deploy.zip Dockerrun.aws.json
 
       - name: Deploy to Elastic Beanstalk
@@ -63,8 +64,8 @@ jobs:
         with:
           aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          application_name: php-app
-          environment_name: Php-app-env
-          region: us-east-1
+          application_name: ${{ env.EB_APP_NAME }}
+          environment_name: ${{ env.EB_ENV_NAME }}
+          region: ${{ env.AWS_REGION }}
           version_label: ${{ github.run_id }}
           deployment_package: deploy.zip
