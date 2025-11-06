@@ -1,7 +1,7 @@
 {
   "AWSEBDockerrunVersion": 1,
   "Image": {
-    "Name": "215896857075.dkr.ecr.us-east-1.amazonaws.com/php-app:latest",
+    "Name": "215896857075.dkr.ecr.us-east-1.amazonaws.com/mnish:latest",
     "Update": "true"
   },
   "Ports": [
@@ -11,6 +11,5 @@
     }
   ]
 }
-
 
 
