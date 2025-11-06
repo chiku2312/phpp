@@ -2,32 +2,29 @@ name: Deploy Dockerized PHP App to Elastic Beanstalk
 
 on:
   push:
-    branches:
-      - main
-      - master
+    branches: [ master, main ]
 
 env:
   AWS_REGION: "us-east-1"
-  ECR_REPOSITORY: "mnish"
-  EB_APP_NAME: "php-app"
-  EB_ENV_NAME: "php-app-env"
+  ECR_REPOSITORY: "mnish"                    # <— tumhara ECR repo
+  EB_APP_NAME: "sid"                         # <— Elastic Beanstalk application name
+  EB_ENV_NAME: "sid-env"                     # <— Environment name
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Configure AWS credentials
+      - name: Configure AWS creds
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Login to Amazon ECR
+      - name: Login to ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
@@ -48,10 +45,7 @@ jobs:
               "Update": "true"
             },
             "Ports": [
-              {
-                "ContainerPort": 80,
-                "HostPort": 80
-              }
+              { "ContainerPort": 80, "HostPort": 80 }
             ]
           }' > Dockerrun.aws.json
 
@@ -63,8 +57,8 @@ jobs:
         with:
           aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          application_name: sid
-          environment_name: sid-env
-          region: us-east-1
+          application_name: web applicatio
+          environment_name: Webapplicatio-env
+          region: ${{ env.AWS_REGION }}
           version_label: ${{ github.run_id }}
           deployment_package: deploy.zip
